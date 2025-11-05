@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Book Format Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-section.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .upload-section h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-section p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .processing.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .preview-section.active {
+            display: block;
+        }
+
+        .preview-controls {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .preview-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preview-info {
+            color: #666;
+        }
+
+        .preview-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f5f5f5;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        #pdfPreview {
+            width: 100%;
+            min-height: 500px;
+            border: none;
+        }
+
+        .file-info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .file-info.active {
+            display: block;
+        }
+
+        .file-info p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .error {
+            background: #ffe0e0;
+            color: #d00;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success {
+            background: #e0ffe0;
+            color: #0a0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .preview-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 PDF Book Format Converter</h1>
+            <p>Convert PDF to book format: First page solo, then paired spreads (2-3, 4-5...)</p>
+        </div>
+
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📄</div>
+                <h2>Upload Your PDF</h2>
+                <p>Click to browse or drag and drop your PDF file here</p>
+                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+                <input type="file" id="fileInput" accept="application/pdf">
+            </div>
+
+            <!-- File Info -->
+            <div class="file-info" id="fileInfo">
+                <p><strong>File:</strong> <span id="fileName"></span></p>
+                <p><strong>Size:</strong> <span id="fileSize"></span></p>
+                <p><strong>Pages:</strong> <span id="pageCount"></span></p>
+                <button class="btn" id="processBtn">Process PDF</button>
+            </div>
+
+            <!-- Processing -->
+            <div class="processing" id="processing">
+                <div class="spinner"></div>
+                <h3>Processing your PDF...</h3>
+                <p>Please wait while we convert your document</p>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <div class="preview-controls">
+                    <div class="preview-info">
+                        <strong>✅ Conversion Complete!</strong>
+                        <p>Preview your converted PDF below</p>
+                    </div>
+                    <div>
+                        <button class="btn" id="downloadBtn">⬇️ Download PDF</button>
+                        <button class="btn" id="resetBtn">🔄 Convert Another</button>
+                    </div>
+                </div>
+                <div class="preview-container">
+                    <canvas id="pdfPreview"></canvas>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="success" id="successMsg"></div>
+            <div class="error" id="errorMsg"></div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Main Application Script -->
+    <script>
+        // PDF Book Format Converter - Main Application Logic
+        let uploadedFile = null;
+        let processedPdfBytes = null;
+        let originalPageCount = 0;
+
+        // DOM Elements
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const pageCount = document.getElementById('pageCount');
+        const processBtn = document.getElementById('processBtn');
+        const processing = document.getElementById('processing');
+        const previewSection = document.getElementById('previewSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const successMsg = document.getElementById('successMsg');
+        const errorMsg = document.getElementById('errorMsg');
+
+        // Initialize PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Setup drag and drop
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // Process button
+        processBtn.addEventListener('click', processPDF);
+
+        // Download button
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // Reset button
+        resetBtn.addEventListener('click', resetApp);
+
+        // Handle file selection
+        async function handleFileSelect(file) {
+            if (file.type !== 'application/pdf') {
+                showError('Please select a valid PDF file');
+                return;
+            }
+
+            uploadedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+
+            // Read PDF to get page count
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                originalPageCount = pdfDoc.getPageCount();
+                pageCount.textContent = originalPageCount;
+
+                fileInfo.classList.add('active');
+                hideMessages();
+            } catch (error) {
+                showError('Error reading PDF: ' + error.message);
+            }
+        }
+
+        // Process PDF
+        async function processPDF() {
+            if (!uploadedFile) {
+                showError('Please select a PDF file first');
+                return;
+            }
+
+            if (originalPageCount < 2) {
+                showError('PDF must have at least 2 pages to create spreads');
+                return;
+            }
+
+            try {
+                // Show processing
+                processing.classList.add('active');
+                fileInfo.classList.remove('active');
+                hideMessages();
+
+                // Read the uploaded PDF
+                const arrayBuffer = await uploadedFile.arrayBuffer();
+                const sourcePdf = await PDFLib.PDFDocument.load(arrayBuffer);
+
+                // Create new PDF
+                const newPdf = await PDFLib.PDFDocument.create();
+
+                const totalPages = sourcePdf.getPageCount();
+
+                // Copy first page as-is
+                const [firstPage] = await newPdf.copyPages(sourcePdf, [0]);
+                newPdf.addPage(firstPage);
+
+                // Process remaining pages in pairs
+                for (let i = 1; i < totalPages; i += 2) {
+                    if (i + 1 < totalPages) {
+                        // We have a pair - create spread
+                        await createSpread(sourcePdf, newPdf, i, i + 1);
+                    } else {
+                        // Last page is odd, add it solo
+                        const [lastPage] = await newPdf.copyPages(sourcePdf, [i]);
+                        newPdf.addPage(lastPage);
+                    }
+                }
+
+                // Save the PDF
+                processedPdfBytes = await newPdf.save();
+                console.log('PDF generated, bytes:', processedPdfBytes.length, 'bytes');
+
+                // Create a copy for preview to avoid any potential issues
+                const previewBytes = new Uint8Array(processedPdfBytes);
+
+                // Hide processing, show preview
+                processing.classList.remove('active');
+                previewSection.classList.add('active');
+
+                // Render preview
+                await renderPreview(previewBytes);
+
+                console.log('After preview, original bytes still:', processedPdfBytes.length, 'bytes');
+                showSuccess(`Successfully converted ${totalPages} pages into book format!`);
+
+            } catch (error) {
+                processing.classList.remove('active');
+                showError('Error processing PDF: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Create spread from two pages using embedPdf approach
+        async function createSpread(sourcePdf, newPdf, leftPageIndex, rightPageIndex) {
+            // Get the source pages
+            const sourcePages = sourcePdf.getPages();
+            const leftPage = sourcePages[leftPageIndex];
+            const rightPage = sourcePages[rightPageIndex];
+
+            // Get dimensions
+            const leftSize = leftPage.getSize();
+            const rightSize = rightPage.getSize();
+
+            // Create a new page that's wide enough for both pages
+            const spreadWidth = leftSize.width + rightSize.width;
+            const spreadHeight = Math.max(leftSize.height, rightSize.height);
+
+            const spreadPage = newPdf.addPage([spreadWidth, spreadHeight]);
+
+            // Embed the source PDF pages - returns array of embedded pages
+            const embeddedPages = await newPdf.embedPdf(sourcePdf, [leftPageIndex, rightPageIndex]);
+
+            // Draw left page
+            spreadPage.drawPage(embeddedPages[0], {
+                x: 0,
+                y: spreadHeight - leftSize.height,
+                width: leftSize.width,
+                height: leftSize.height,
+            });
+
+            // Draw right page
+            spreadPage.drawPage(embeddedPages[1], {
+                x: leftSize.width,
+                y: spreadHeight - rightSize.height,
+                width: rightSize.width,
+                height: rightSize.height,
+            });
+        }
+
+        // Render PDF preview
+        let currentPdfDoc = null;
+        let currentPageNum = 1;
+        let totalPreviewPages = 0;
+
+        async function renderPreview(pdfBytes) {
+            const canvas = document.getElementById('pdfPreview');
+            const context = canvas.getContext('2d');
+
+            // Load PDF
+            const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+            currentPdfDoc = await loadingTask.promise;
+            totalPreviewPages = currentPdfDoc.numPages;
+
+            // Update preview info
+            const previewInfo = document.querySelector('.preview-info');
+            previewInfo.innerHTML = `
+                <strong>✅ Conversion Complete!</strong>
+                <p>Preview: Page <span id="currentPage">1</span> of <span id="totalPages">${totalPreviewPages}</span></p>
+            `;
+
+            // Add navigation controls if more than 1 page
+            if (totalPreviewPages > 1) {
+                const controls = document.querySelector('.preview-controls');
+                const navDiv = document.createElement('div');
+                navDiv.className = 'preview-nav';
+                navDiv.innerHTML = `
+                    <button class="btn" id="prevPage" onclick="changePage(-1)">◀ Previous</button>
+                    <button class="btn" id="nextPage" onclick="changePage(1)">Next ▶</button>
+                `;
+                controls.appendChild(navDiv);
+            }
+
+            // Render first page
+            await renderPage(1);
+        }
+
+        async function renderPage(pageNum) {
+            if (!currentPdfDoc) return;
+
+            const canvas = document.getElementById('pdfPreview');
+            const context = canvas.getContext('2d');
+
+            // Get page
+            const page = await currentPdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 });
+
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+
+            await page.render(renderContext).promise;
+
+            // Update page number display
+            const currentPageSpan = document.getElementById('currentPage');
+            if (currentPageSpan) {
+                currentPageSpan.textContent = pageNum;
+            }
+
+            // Update button states
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            if (prevBtn) prevBtn.disabled = pageNum <= 1;
+            if (nextBtn) nextBtn.disabled = pageNum >= totalPreviewPages;
+        }
+
+        // Change page in preview
+        window.changePage = function(delta) {
+            currentPageNum += delta;
+            if (currentPageNum < 1) currentPageNum = 1;
+            if (currentPageNum > totalPreviewPages) currentPageNum = totalPreviewPages;
+            renderPage(currentPageNum);
+        }
+
+        // Download processed PDF
+        function downloadPDF() {
+            if (!processedPdfBytes) {
+                showError('No processed PDF available');
+                return;
+            }
+
+            try {
+                console.log('PDF bytes length:', processedPdfBytes.length);
+                console.log('PDF bytes type:', processedPdfBytes.constructor.name);
+
+                const blob = new Blob([processedPdfBytes], { type: 'application/pdf' });
+                console.log('Blob size:', blob.size);
+
+                if (blob.size === 0) {
+                    showError('Generated PDF is empty. Please try processing again.');
+                    return;
+                }
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const fileName = uploadedFile.name.replace('.pdf', '_book_format.pdf');
+                a.download = fileName;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+
+                // Trigger download
+                a.click();
+
+                // Cleanup after delay
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 1000);
+
+                showSuccess('PDF downloaded successfully!');
+            } catch (error) {
+                showError('Error downloading PDF: ' + error.message);
+                console.error('Download error:', error);
+            }
+        }
+
+        // Reset application
+        function resetApp() {
+            uploadedFile = null;
+            processedPdfBytes = null;
+            originalPageCount = 0;
+            currentPdfDoc = null;
+            currentPageNum = 1;
+            totalPreviewPages = 0;
+            fileInput.value = '';
+
+            fileInfo.classList.remove('active');
+            processing.classList.remove('active');
+            previewSection.classList.remove('active');
+
+            // Remove navigation controls if they exist
+            const navDiv = document.querySelector('.preview-nav');
+            if (navDiv) navDiv.remove();
+
+            hideMessages();
+        }
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.add('active');
+            successMsg.classList.remove('active');
+        }
+
+        function showSuccess(message) {
+            successMsg.textContent = message;
+            successMsg.classList.add('active');
+            errorMsg.classList.remove('active');
+        }
+
+        function hideMessages() {
+            errorMsg.classList.remove('active');
+            successMsg.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

@@ -211,6 +211,19 @@
             display: block;
         }
 
+        .warning {
+            background: #fff4e0;
+            color: #cc6600;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .warning.active {
+            display: block;
+        }
+
         .success {
             background: #e0ffe0;
             color: #0a0;
@@ -291,13 +304,18 @@
 
             <!-- Messages -->
             <div class="success" id="successMsg"></div>
+            <div class="warning" id="warningMsg"></div>
             <div class="error" id="errorMsg"></div>
         </div>
     </div>
 
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- External Libraries with SRI for security -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"
+            integrity="sha512-BbCPQ6Fmvdx4FLV8ZOITJO9RStDdO9PbhP5wU1FHhD9pqqeVCvhJCp6C1uKKFKIKJhCcVEyqE8kZCUg5XgBzfg=="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+            integrity="sha512-q3KMZK1ByRjLk6XZPLZfKzL3gM3aDVjHKqN8zLgEEGlGq7m1/v0fGJQPe/DhLxmQ5K3xUqHLLfbZf2W1sQOo+Q=="
+            crossorigin="anonymous"></script>
 
     <!-- Main Application Script -->
     <script>
@@ -319,6 +337,7 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const resetBtn = document.getElementById('resetBtn');
         const successMsg = document.getElementById('successMsg');
+        const warningMsg = document.getElementById('warningMsg');
         const errorMsg = document.getElementById('errorMsg');
 
         // Initialize PDF.js worker
@@ -366,9 +385,23 @@
                 return;
             }
 
+            // File size limits (in bytes)
+            const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB hard limit
+            const WARN_FILE_SIZE = 50 * 1024 * 1024; // 50MB warning threshold
+
+            if (file.size > MAX_FILE_SIZE) {
+                showError('File is too large (' + formatFileSize(file.size) + '). Maximum supported size is 200MB.');
+                return;
+            }
+
             uploadedFile = file;
             fileName.textContent = file.name;
             fileSize.textContent = formatFileSize(file.size);
+
+            // Warn for large files
+            if (file.size > WARN_FILE_SIZE) {
+                showWarning('⚠️ Large file detected (' + formatFileSize(file.size) + '). Processing may take a while.');
+            }
 
             // Read PDF to get page count
             try {
@@ -378,7 +411,8 @@
                 pageCount.textContent = originalPageCount;
 
                 fileInfo.classList.add('active');
-                hideMessages();
+                // Only hide error, keep warning visible if present
+                errorMsg.classList.remove('active');
             } catch (error) {
                 showError('Error reading PDF: ' + error.message);
             }
@@ -446,8 +480,8 @@
 
             } catch (error) {
                 processing.classList.remove('active');
-                showError('Error processing PDF: ' + error.message);
-                console.error(error);
+                showError('Error processing PDF. The file may be corrupted or use unsupported features. Details: ' + error.message);
+                console.error('Processing error:', error);
             }
         }
 
@@ -533,7 +567,14 @@
 
             // Get page
             const page = await currentPdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.5 });
+
+            // Calculate responsive scale based on container width
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40; // Account for padding
+            const originalViewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(containerWidth / originalViewport.width, 2.0); // Max scale of 2.0
+
+            const viewport = page.getViewport({ scale: scale });
 
             canvas.width = viewport.width;
             canvas.height = viewport.height;
@@ -569,7 +610,7 @@
         // Download processed PDF
         function downloadPDF() {
             if (!processedPdfBytes) {
-                showError('No processed PDF available');
+                showError('No processed PDF available. Please process a PDF first.');
                 return;
             }
 
@@ -581,7 +622,7 @@
                 console.log('Blob size:', blob.size);
 
                 if (blob.size === 0) {
-                    showError('Generated PDF is empty. Please try processing again.');
+                    showError('Generated PDF is empty. This may be due to browser memory limitations. Try a smaller PDF or refresh the page.');
                     return;
                 }
 
@@ -602,9 +643,9 @@
                     URL.revokeObjectURL(url);
                 }, 1000);
 
-                showSuccess('PDF downloaded successfully!');
+                showSuccess('PDF downloaded successfully! Check your downloads folder.');
             } catch (error) {
-                showError('Error downloading PDF: ' + error.message);
+                showError('Error downloading PDF. Your browser may be blocking downloads. Details: ' + error.message);
                 console.error('Download error:', error);
             }
         }
@@ -643,16 +684,24 @@
             errorMsg.textContent = message;
             errorMsg.classList.add('active');
             successMsg.classList.remove('active');
+            warningMsg.classList.remove('active');
+        }
+
+        function showWarning(message) {
+            warningMsg.textContent = message;
+            warningMsg.classList.add('active');
         }
 
         function showSuccess(message) {
             successMsg.textContent = message;
             successMsg.classList.add('active');
             errorMsg.classList.remove('active');
+            warningMsg.classList.remove('active');
         }
 
         function hideMessages() {
             errorMsg.classList.remove('active');
+            warningMsg.classList.remove('active');
             successMsg.classList.remove('active');
         }
     </script>

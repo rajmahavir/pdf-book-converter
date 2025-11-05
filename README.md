@@ -11,14 +11,8 @@ Perfect for creating digital books with proper page spreads for viewing on table
 - **No Server Needed** - Just open the HTML file and start converting
 - **Drag & Drop** - Easy file upload with drag and drop support
 - **Live Preview** - Navigate through converted pages before downloading
-- **Responsive Preview** - Auto-scales to fit your screen perfectly
-- **Progress Tracking** - Real-time progress bar shows conversion status
-- **Dark Mode** - Easy on the eyes with automatic theme persistence
-- **Keyboard Shortcuts** - Navigate previews with arrow keys or A/D
-- **Smart File Handling** - Automatic warnings for large files (50MB+), 200MB limit
-- **Enhanced Security** - SRI hashes protect against CDN tampering
 - **Any Page Size** - Works with A4, A5, A3, or any PDF page size
-- **Modern UI** - Beautiful, responsive design with smooth animations
+- **Modern UI** - Beautiful, responsive design
 
 ## 🚀 Quick Start
 
@@ -33,11 +27,10 @@ Perfect for creating digital books with proper page spreads for viewing on table
 ### How to Use
 
 1. Open `pdf-converter-standalone.html` in your browser
-2. (Optional) Toggle dark mode with the 🌙/☀️ button in the header
-3. Upload your PDF using drag & drop or file picker
-4. Click "Process PDF" and watch the progress bar
-5. Preview all pages (use Previous/Next buttons or arrow keys/A/D)
-6. Download the converted PDF
+2. Upload your PDF using drag & drop or file picker
+3. Click "Process PDF"
+4. Preview all pages (use Previous/Next buttons)
+5. Download the converted PDF
 
 ## 📋 How It Works
 
@@ -96,25 +89,15 @@ pdf-book-converter/
 
 ## 🚫 Limitations
 
-- Maximum file size is 200MB (hard limit for browser memory)
-- Large PDFs (50MB+) will show a warning and may be slow to process
+- Very large PDFs (100+ MB) may be slow to process in browser
 - Some complex PDFs with forms or annotations may not convert perfectly
 - Encrypted/password-protected PDFs are not supported
-
-## ⌨️ Keyboard Shortcuts
-
-When viewing the preview, you can use these shortcuts:
-- **Arrow Left / A** - Previous page
-- **Arrow Right / D** - Next page
-- **Home** - Jump to first page
-- **End** - Jump to last page
 
 ## 🛠️ Troubleshooting
 
 - **Preview not showing:** Check your internet connection (first load only) or refresh the page
 - **Processing fails:** Ensure the PDF isn't corrupted or password-protected
-- **Slow performance:** Large PDFs may take time - watch the progress bar
-- **File too large:** Files over 200MB will be rejected, try a smaller PDF
+- **Slow performance:** Large PDFs may take time - wait for processing to complete
 - **Blank pages:** Check browser console (F12) for errors
 
 ## 📝 License

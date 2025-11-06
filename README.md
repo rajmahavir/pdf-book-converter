@@ -4,6 +4,12 @@ A standalone web tool to convert PDFs into book format: first page solo, then pa
 
 Perfect for creating digital books with proper page spreads for viewing on tablets, e-readers, or large monitors.
 
+## 🌐 Try It Online
+
+**[Launch PDF Book Converter](https://rajmahavir.github.io/pdf-book-converter/)**
+
+No download needed - use it directly in your browser!
+
 ## ✨ Features
 
 - **Single HTML File** - Everything embedded in one file, no installation required
